@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 import gym
 
 def human_play():
+    pygame.init()
     pressed_keys = pygame.key.get_pressed()
 
     if pressed_keys[pygame.K_LEFT]: #left
@@ -29,6 +30,7 @@ def human_play():
     return 0 #down
 
 def train(gamma, lr, eps, steps, title, version):
+    
     render = False #rendering
     epsilon = 0.1
     D = 8 * 2 * 11 + 2
