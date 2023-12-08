@@ -16,19 +16,24 @@ NUM_DEMOS = 50
 EPISODES = 5000
 LR = 0.01 #learning rate
 STEPS = 500 #steps in each episode
-ENVIRONMENT_NAME = "LunarLander"
-ENVIRONMENT_VERSION = "Modified"
 
 record_demos = True
 
 class HumanInTheLoopTrain():
-
+    def __init__(self, environment, env_name, algorithm, episodes, gamma, alpha):
+        self.env_name = env_name
+        self.env = environment
+        self.policy = algorithm
+        self.eps = episodes
+        self.gamma = gamma
+        self.alpha = alpha
+        
     """
     Human_play()
     Purpose: allows human to choose actions based on the state
     Returns: Chosen Action (int)
     """
-    def human_play():
+    def human_play(self):
         pressed_keys = pygame.key.get_pressed()
 
         if pressed_keys[pygame.K_LEFT]: #left
@@ -39,19 +44,20 @@ class HumanInTheLoopTrain():
             return 3
         
         return 0 #do nothing
-    def train_with_demonstrations(gamma, lr, eps, step):
+    
+    def train_with_demonstrations(self):
         file = open('./data/demos/demos_10.pickle', 'rb')
         demo_dict = pickle.load(file)
         file.close()
 
-        env = Environment
-        policy = Algorithm
-        
-        policy.set_explore_epsilon(0.1)
+        env = self.env
+        policy = self.policy
+
         demo_eps = len(demo_dict)
+
         avg_rewards_past = [] 
 
-        for i in range(demo_eps + eps):
+        for i in range(demo_eps + self.eps):
             if i >= 100 and i < 200:
                 steps = demo_dict[i-100]["steps"]
                 seed = demo_dict[i-100]["seed"]
@@ -104,18 +110,15 @@ class HumanInTheLoopTrain():
     Purpose: Train policy without the use of human demonstrations
     Returns: List of average rewards for each episode
     """
-    def train_without_demonstrations(self
-                                    
-                                    
-                                    ):
-        env = Environment 
-        policy = Algorithm
+    def train_without_demonstrations(self, num_demos):
+        env = self.env 
+        policy = self.policy
         
         rewards_past = []
         avg_rewards_past = []
         running_reward = 0
 
-        for i_episode in range(0, eps + num_demos):
+        for i_episode in range(0, self.eps + num_demos):
             episode_rewards = 0
             state, _ = env.reset(seed=10)
 
@@ -125,7 +128,7 @@ class HumanInTheLoopTrain():
                     action = policy.process_step(state, False)
                     state, reward, done, _, win = env.step(action)
                 else:
-                    human_action = human_play()
+                    human_action = self.human_play()
                     policy.process_step(state, True)
                     policy.save_human_action(human_action)
                     state, reward, done, _, win = env.step(human_action)
@@ -182,17 +185,14 @@ class HumanInTheLoopTrain():
             Each key holds all the information required to replay the demo for visual 
             examples or training purposes.
     """
-    def demonstrations_only(gamma, lr, steps, num_demos:int):
-        env = LunarLander(render_mode="human") #modified LunarLander game
+    def demonstrations_only(self, num_demos):
+        env = self.env #modified LunarLander game
         human = True #Demonstrations are occuring, render the game
 
         demonstrations_dict = {} #dictionary of demonstrations
         
         #Create policy
-        policy = SimplePG(num_actions = 4, input_size = 11, hidden_layer_size=11, 
-                        learning_rate=lr, gamma=gamma, decay_rate=0.9, greedy_e_epsilon=0.1, 
-                        random_seed=10) #11 state elements in modified LunarLander
-        
+        policy = self.policy
         #set epsilon value
         policy.set_explore_epsilon(0.1)
 
@@ -241,19 +241,19 @@ class HumanInTheLoopTrain():
             policy.finish_episode(human)
             policy.update_parameters() 
             rewards_per_episode.append(running_reward)
-            DemoClass = Demonstration(ENVIRONMENT_NAME, ENVIRONMENT_VERSION, i_episode, final_episode_steps, timestamps, final_episode_states, final_episode_actions, final_episode_rewards)
+            DemoClass = Demonstration(self.env_name, i_episode, final_episode_steps, timestamps, final_episode_states, final_episode_actions, final_episode_rewards)
             finished_demo = DemoClass.save_demonstration()
             demonstrations_dict[i_episode] = finished_demo
 
         return demonstrations_dict
 
-    def play_demonstrations():
+    def play_demonstrations(self):
         file = open('./data/demos/demos_10.pickle', 'rb')
         demo_dict = pickle.load(file)
         file.close()
 
-        env = Environment
-        policy = Algorithm
+        env = self.env
+        policy = self.policy
 
         for i in range(len(demo_dict)):
             steps = demo_dict[i]["steps"]
