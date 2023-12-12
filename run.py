@@ -8,17 +8,28 @@ plotting and csv saving.
 """
 
 
-from Algorithms import SimplePG
 from Data import Demonstration, DataClass
-from Games import LunarLander, PixelCopter, FlappyBird
-import Agents
-import BCI
+from set_up import SetUp
+
 
 NO_HITL = True
 USE_BCI = False
 
-LL = LunarLander()
-PC = PixelCopter()
+"""
+REQUIRED INPUTS HERE:
+"""
+params = {"gamma": 0.99,
+          "learning_rate": 0.1,
+          "decay_rate": 0.001,
+          "epsilon": 0.1,
+          "seed": 10,
+          "bci": False,
+          "demonstrations_only": {"boolean": True, "num_demos": 10, "name": "PARTICIPANT_001_12122023546"},
+          "episodes": 1000,
+          "steps": 500,
+          "algorithm": "ppo",
+          "environment": "lunar lander"
+          }
 
 def run():
     if NO_HITL == True:
@@ -33,6 +44,8 @@ def main():
     pass
 
 def main_hitl():
+    setup = SetUp(params)
+
     pass
 
 def main_bcihitl():

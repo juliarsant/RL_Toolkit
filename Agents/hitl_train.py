@@ -20,13 +20,17 @@ STEPS = 500 #steps in each episode
 record_demos = True
 
 class HumanInTheLoopTrain():
-    def __init__(self, environment, env_name, algorithm, episodes, gamma, alpha):
+    def __init__(self, environment, env_name, algorithm, episodes, steps, gamma, alpha, seed, num_demos, name):
         self.env_name = env_name
+        self.steps = steps
         self.env = environment
         self.policy = algorithm
         self.eps = episodes
         self.gamma = gamma
         self.alpha = alpha
+        self.num_demos = num_demos
+        self.demo_name = name
+        self.seed = seed
         
     """
     Human_play()
@@ -44,9 +48,27 @@ class HumanInTheLoopTrain():
             return 3
         
         return 0 #do nothing
+    def start():
+        input("Press Enter to Start Demonstrations: ")
+        print("Starting in 3...")
+        time.time(1)
+        print("2...")
+        time.time(1)
+        print("1...")
+        time.time(1)
+        print("Start!")
+        print("")
+
+    def run(self):
+        self.start()
+        self.demonstrations_only(self.demo_name)
+        print("Thank you!")
+        time.time(15)
+        print("Starting agent training...")
+        self.train_with_demonstrations()
     
     def train_with_demonstrations(self):
-        file = open('./data/demos/demos_10.pickle', 'rb')
+        file = open('./data/demos/{}}.pickle'.format(self.demo_name), 'rb')
         demo_dict = pickle.load(file)
         file.close()
 
@@ -63,7 +85,7 @@ class HumanInTheLoopTrain():
                 seed = demo_dict[i-100]["seed"]
                 state, _ = env.reset(seed=seed)
             else:
-                steps = step
+                steps = self.step
                 state, _ = env.reset()
 
             running_reward = 0
@@ -189,7 +211,7 @@ class HumanInTheLoopTrain():
         env = self.env #modified LunarLander game
         human = True #Demonstrations are occuring, render the game
 
-        demonstrations_dict = {} #dictionary of demonstrations
+        demonstrations_dict = {"demo_name": self.demo_name} #dictionary of demonstrations
         
         #Create policy
         policy = self.policy
@@ -241,7 +263,7 @@ class HumanInTheLoopTrain():
             policy.finish_episode(human)
             policy.update_parameters() 
             rewards_per_episode.append(running_reward)
-            DemoClass = Demonstration(self.env_name, i_episode, final_episode_steps, timestamps, final_episode_states, final_episode_actions, final_episode_rewards)
+            DemoClass = Demonstration(environment_name=self.env_name, environment_version=None, seed=self.seed, steps= final_episode_steps, timestamps= timestamps, states=final_episode_states, actions=final_episode_actions, rewards=final_episode_rewards)
             finished_demo = DemoClass.save_demonstration()
             demonstrations_dict[i_episode] = finished_demo
 
