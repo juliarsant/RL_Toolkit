@@ -11,12 +11,6 @@ import time
 import pickle
 from Data.demonstrations import Demonstration
 
-GAMMA = 0.99
-NUM_DEMOS = 50
-EPISODES = 5000
-LR = 0.01 #learning rate
-STEPS = 500 #steps in each episode
-
 record_demos = True
 
 class HumanInTheLoopTrain():
@@ -39,16 +33,20 @@ class HumanInTheLoopTrain():
     """
     def human_play(self):
         pressed_keys = pygame.key.get_pressed()
+        if self.env_name == "lunar lander":
+            if pressed_keys[pygame.K_LEFT]: #left
+                return 1
+            elif pressed_keys[pygame.K_UP]: #up
+                return 2
+            elif pressed_keys[pygame.K_RIGHT]: #right
+                return 3
+            return 0 #do nothing
+        elif self.env_name == "pixelcopter":
+            if pressed_keys[pygame.K_w]: #left
+                return 1
+            return 0
 
-        if pressed_keys[pygame.K_LEFT]: #left
-            return 1
-        elif pressed_keys[pygame.K_UP]: #up
-            return 2
-        elif pressed_keys[pygame.K_RIGHT]: #right
-            return 3
-        
-        return 0 #do nothing
-    def start():
+    def start(self):
         input("Press Enter to Start Demonstrations: ")
         print("Starting in 3...")
         time.time(1)
@@ -65,8 +63,12 @@ class HumanInTheLoopTrain():
         print("Thank you!")
         time.time(15)
         print("Starting agent training...")
-        self.train_with_demonstrations()
-    
+        rewards, steps = self.train_with_demonstrations()
+        self.save_data()
+        print("Done!")
+
+    def save_data(self):
+        pass
     def train_with_demonstrations(self):
         file = open('./data/demos/{}}.pickle'.format(self.demo_name), 'rb')
         demo_dict = pickle.load(file)
@@ -78,102 +80,108 @@ class HumanInTheLoopTrain():
         demo_eps = len(demo_dict)
 
         avg_rewards_past = [] 
+        avg_steps_past = []
 
         for i in range(demo_eps + self.eps):
-            if i >= 100 and i < 200:
-                steps = demo_dict[i-100]["steps"]
-                seed = demo_dict[i-100]["seed"]
-                state, _ = env.reset(seed=seed)
+            if i < demo_eps:
+                steps = demo_dict[i]["steps"]
+                seed = demo_dict[i]["seed"]
+                state = env.reset(seed=seed)
             else:
-                steps = self.step
-                state, _ = env.reset()
+                steps = self.steps
+                state = env.reset()
 
-            running_reward = 0
+            running_reward, running_steps = 0
 
             for j in range(steps):
                 #pick an action
-                if i >= 100 and i<200:
-                    human_action = demo_dict[i-100]["actions"][j]
-                    policy.process_step(demo_dict[i-100]["states"][j], True)
+                if i < demo_eps:
+                    human_action = demo_dict[i]["actions"][j]
+                    policy.process_step(demo_dict[i]["states"][j], True)
                     policy.save_human_action(human_action)
-                    next_state, reward, done, _, win = env.step(human_action)
+                    next_state, reward, done, win = env.step(human_action)
                 else:
                     action = policy.process_step(state, False)
-                    next_state, reward, done, _, win = env.step(action)
+                    next_state, reward, done, win= env.step(action)
 
-                policy.save_rewards(reward)
+                policy.save_rewards(reward,state,action,next_state,done)
                 running_reward += reward
                 state = next_state
 
                 if done:
+                    running_steps += j
                     break
-        
+            
+            if i < self.num_demos:
+                policy.finish_episode(running_reward, True)
+            else:
+                policy.finish_episode(running_reward, False)
+
             if i % 20 == 0:
                 average_reward = running_reward/20
+                average_step = running_steps/20
                 avg_rewards_past.append(average_reward)
+                avg_steps_past.append(average_step)
                 print('Episode {}\tlength: {}\treward: {}'.format(i, j, average_reward))
-                running_reward = 0
-            
-            if i >= 100 and i < 200:
-                policy.finish_episode(True)
-            else:
-                policy.finish_episode(False)
+                running_reward, running_steps = 0
 
             policy.update_parameters()
+        
+        policy.save_agent()
 
-        return avg_rewards_past
+        return avg_rewards_past, avg_steps_past
             
         
 
 
 
-    """
-    Train_without_demonstrations():
-    Purpose: Train policy without the use of human demonstrations
-    Returns: List of average rewards for each episode
-    """
-    def train_without_demonstrations(self, num_demos):
-        env = self.env 
-        policy = self.policy
+    # """
+    # Train_without_demonstrations():
+    # Purpose: Train policy without the use of human demonstrations
+    # Returns: List of average rewards for each episode
+    # """
+    # def train_without_demonstrations(self, num_demos):
+    #     env = self.env 
+    #     policy = self.policy
         
-        rewards_past = []
-        avg_rewards_past = []
-        running_reward = 0
+    #     rewards_past = []
+    #     avg_rewards_past = []
+    #     running_reward = 0
 
-        for i_episode in range(0, self.eps + num_demos):
-            episode_rewards = 0
-            state, _ = env.reset(seed=10)
+    #     for i_episode in range(0, self.eps + num_demos):
+    #         episode_rewards = 0
+    #         state, _ = env.reset(seed=10)
 
-            for t in range(steps):
-                #pick an action
-                if not human:
-                    action = policy.process_step(state, False)
-                    state, reward, done, _, win = env.step(action)
-                else:
-                    human_action = self.human_play()
-                    policy.process_step(state, True)
-                    policy.save_human_action(human_action)
-                    state, reward, done, _, win = env.step(human_action)
+    #         for t in range(self.steps):
+    #             #pick an action
+    #             if not human:
+    #                 action = policy.process_step(state, False)
+    #                 state, reward, done, _, win = env.step(action)
+    #             else:
+    #                 human_action = self.human_play()
+    #                 policy.process_step(state, True)
+    #                 policy.save_human_action(human_action)
+    #                 state, reward, done, _, win = env.step(human_action)
 
-                policy.save_rewards(reward)
-                running_reward += reward
-                episode_rewards += reward
+    #             policy.save_rewards(reward)
+    #             running_reward += reward
+    #             episode_rewards += reward
 
-                if done:
-                    break
+    #             if done:
+    #                 break
             
-            rewards_past.append(episode_rewards)
+    #         rewards_past.append(episode_rewards)
 
-            if i_episode % 20 == 0:
-                average_reward = running_reward/20
-                avg_rewards_past.append(average_reward)
-                print('Episode {}\tlength: {}\treward: {}'.format(i_episode, t, average_reward))
-                running_reward = 0
+    #         if i_episode % 20 == 0:
+    #             average_reward = running_reward/20
+    #             avg_rewards_past.append(average_reward)
+    #             print('Episode {}\tlength: {}\treward: {}'.format(i_episode, t, average_reward))
+    #             running_reward = 0
         
-            policy.finish_episode(human)
-            policy.update_parameters()
+    #         policy.finish_episode(human)
+    #         policy.update_parameters()
 
-        return avg_rewards_past
+    #     return avg_rewards_past
 
 
     """
@@ -227,9 +235,9 @@ class HumanInTheLoopTrain():
             timestamps, action_list = [], [] #timestamps
             running_reward = 0
 
-            for t in range(steps):
+            for t in range(self.steps):
                 #pick an action
-                human_action = human_play()
+                human_action = self.human_play()
                 action_list.append(human_action)
 
                 #timestamp update
@@ -269,29 +277,29 @@ class HumanInTheLoopTrain():
 
         return demonstrations_dict
 
-    def play_demonstrations(self):
-        file = open('./data/demos/demos_10.pickle', 'rb')
-        demo_dict = pickle.load(file)
-        file.close()
+    # def play_demonstrations(self):
+    #     file = open('./data/demos/demos_10.pickle', 'rb')
+    #     demo_dict = pickle.load(file)
+    #     file.close()
 
-        env = self.env
-        policy = self.policy
+    #     env = self.env
+    #     policy = self.policy
 
-        for i in range(len(demo_dict)):
-            steps = demo_dict[i]["steps"]
-            seed = demo_dict[i]["seed"]
-            state, _ = env.reset(seed=seed)
+    #     for i in range(len(demo_dict)):
+    #         steps = demo_dict[i]["steps"]
+    #         seed = demo_dict[i]["seed"]
+    #         state, _ = env.reset(seed=seed)
 
-            for j in range(steps):
-                action = demo_dict[i]["actions"][j]
+    #         for j in range(steps):
+    #             action = demo_dict[i]["actions"][j]
 
-                #Return state, reward
-                state, reward, done, _, _ = env.step(action)
+    #             #Return state, reward
+    #             state, reward, done, _, _ = env.step(action)
 
-                policy.save_rewards(reward)
+    #             policy.save_rewards(reward)
 
-                if done:
-                    break
+    #             if done:
+    #                 break
 
         
 

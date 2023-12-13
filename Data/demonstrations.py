@@ -42,6 +42,8 @@ class Demonstration():
         self.state_dict["rewards"] = self.rewards
 
         return self.state_dict
+    
+    
 
     
     

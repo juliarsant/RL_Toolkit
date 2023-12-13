@@ -57,6 +57,8 @@ class SimplePG(object):
 		self._grad_buffer = { k : np.zeros_like(v) for k,v in self._model.items() } # update buffers that add up gradients over a batch
 		self._rmsprop_cache = { k : np.zeros_like(v) for k,v in self._model.items() } # rmsprop memory
 
+	def save_agent(self):
+		pass
 	
 	# softmax function
 	def softmax(self,x):
@@ -189,7 +191,7 @@ class SimplePG(object):
 		return a
 		
 	# after process_step, this function needs to be called to set the reward
-	def save_rewards(self,reward):
+	def save_rewards(self,reward,state=None, action=None, next_state=None, done=None):
 		
 		# store the reward in the list of rewards
 		self._drs.append(reward)
@@ -203,7 +205,7 @@ class SimplePG(object):
 
 
 	# this function should be called when an episode (i.e., a game) has finished
-	def finish_episode(self, human_demonstration):
+	def finish_episode(self, ep_return = None, human_demonstration=False):
 		# stack together all inputs, hidden states, action gradients, and rewards for this episode
 		
 		# this needs to be stored to be used by policy_backward

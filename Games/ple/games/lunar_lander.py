@@ -444,8 +444,12 @@ class LunarLander(gym.Env, EzPickle):
 
         if self.render_mode == "human":
             self.render()
-        return self.step(np.array([0, 0]) if self.continuous else 0)[0], {}
-
+        return self.step(np.array([0, 0]) if self.continuous else 0)[0]
+    
+    
+    def extract_parameters():
+        return 4, 11, "int"
+    
     def _create_particle(self, mass, x, y, ttl):
         p = self.world.CreateDynamicBody(
             position=(x, y),
@@ -649,7 +653,7 @@ class LunarLander(gym.Env, EzPickle):
 
         if self.render_mode == "human":
             self.render()
-        return np.array(state, dtype=np.float32), reward, terminated, {}, win
+        return np.array(state, dtype=np.float32), reward, terminated, win
 
     def render(self):
         if self.render_mode is None:

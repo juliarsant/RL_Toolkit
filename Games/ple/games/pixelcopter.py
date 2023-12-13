@@ -8,6 +8,7 @@ from base.pygamewrapper import PyGameWrapper
 import pygame
 from pygame.constants import K_w, K_s
 from utils.vec2d import vec2d
+import numpy as np
 
 
 class Block(pygame.sprite.Sprite):
@@ -112,7 +113,7 @@ class Terrain(pygame.sprite.Sprite):
             color,
             (0, SCREEN_HEIGHT * 1.05, self.width, SCREEN_HEIGHT * 0.5),
             0
-        )
+        ) 
 
         self.image = image
         self.rect = self.image.get_rect()
@@ -133,28 +134,38 @@ class Pixelcopter(PyGameWrapper):
         Screen height, recommended to be same dimension as width.
     """
 
-    def __init__(self, width=48, height=48):
+    def __init__(self, width=48, height=48, seed=np.random.randint(0,100)):
         actions = {
             "up": K_w
         }
+        game.rng = np.random.RandomState(seed)
 
         PyGameWrapper.__init__(self, width, height, actions=actions)
 
         self.is_climbing = False
         self.speed = 0.0004 * width
 
-    def _handle_player_events(self):
-        self.is_climbing = False
+    def _handle_player_events(self, action):
+        if self.demo == True:
+            self.is_climbing = False
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-            if event.type == pygame.KEYDOWN:
-                key = event.key
-                if key == self.actions['up']:
-                    self.is_climbing = True
+                if event.type == pygame.KEYDOWN:
+                    key = event.key
+                    if key == self.actions['up']:
+                        self.is_climbing = True
+        else:
+            if action == 1:
+                self.is_climbing = True
+            else:
+                self.is_climbing = False
+
+
+
 
     def getGameState(self):
         """
@@ -188,11 +199,11 @@ class Pixelcopter(PyGameWrapper):
             "player_dist_to_ceil": self.player.pos.y - (current_terrain.pos.y - self.height * 0.25),
             "player_dist_to_floor": (current_terrain.pos.y + self.height * 0.25) - self.player.pos.y,
             "next_gate_dist_to_player": min_dist,
-#            "next_gate_block_top": min_block.pos.y,
-#            "next_gate_block_bottom": min_block.pos.y + min_block.height
+            "next_gate_block_top": min_block.pos.y,
+            "next_gate_block_bottom": min_block.pos.y + min_block.height
         }
-
-        return state
+        state_array = [self.player.pos.y, self.player.momentum, self.player.pos.y - (current_terrain.pos.y - self.height * 0.25),(current_terrain.pos.y + self.height * 0.25) - self.player.pos.y,min_dist,min_block.pos.y,min_block.pos.y + min_block.height]
+        return state_array
 
     def getScreenDims(self):
         return self.screen_dim
@@ -209,6 +220,9 @@ class Pixelcopter(PyGameWrapper):
     def init(self):
         self.score = 0.0
         self.lives = 1.0
+        game.rng = np.random.RandomState(self.seed)
+
+        
 
         self.player = HelicopterPlayer(
             self.speed,
@@ -283,11 +297,13 @@ class Pixelcopter(PyGameWrapper):
 
     def reset(self):
         self.init()
+        return self.getGameState()
 
-    def step(self, dt):
+    def step(self, action, dt):
 
         self.screen.fill((0, 0, 0))
-        self._handle_player_events()
+
+        self._handle_player_events(action)
 
         self.score += self.rewards["tick"]
 
@@ -312,6 +328,7 @@ class Pixelcopter(PyGameWrapper):
         for b in self.block_group:
             if b.pos.x <= self.player.pos.x and len(self.block_group) == 1:
                 self.score += self.rewards["positive"]
+                current_score = self.rewards["positive"]
                 self._add_blocks()
 
             if b.pos.x <= -b.width:
@@ -320,6 +337,8 @@ class Pixelcopter(PyGameWrapper):
         for t in self.terrain_group:
             if t.pos.x <= -t.width:
                 self.score += self.rewards["positive"]
+                current_score = self.rewards["positive"]
+
                 t.kill()
 
         if self.player.pos.y < self.height * 0.125:  # its above
@@ -334,13 +353,17 @@ class Pixelcopter(PyGameWrapper):
 
         if self.lives <= 0.0:
             self.score += self.rewards["loss"]
+            current_score = self.rewards["loss"]
+
 
         self.player_group.draw(self.screen)
         self.block_group.draw(self.screen)
         self.terrain_group.draw(self.screen)
 
         if self.lives <= 0.0:
-            return False
+            return self.getGameState(), current_score, False, None
+
+        return self.getGameState(), current_score, True, None
 
 if __name__ == "__main__":
     import numpy as np

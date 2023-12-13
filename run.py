@@ -8,7 +8,7 @@ plotting and csv saving.
 """
 
 
-from Data import Demonstration, DataClass
+# from Data import Demonstration, DataClass
 from set_up import SetUp
 
 
@@ -24,32 +24,16 @@ params = {"gamma": 0.99,
           "epsilon": 0.1,
           "seed": 10,
           "bci": False,
-          "demonstrations_only": {"boolean": True, "num_demos": 10, "name": "PARTICIPANT_001_12122023546"},
-          "episodes": 1000,
+          "demonstrations_only": {"boolean": False, "num_demos": 2, "name": "PARTICIPANT_001_12122023546"},
+          "episodes": 100,
           "steps": 500,
           "algorithm": "ppo",
           "environment": "lunar lander"
           }
 
 def run():
-    if NO_HITL == True:
-        main()
-    elif USE_BCI == True:
-        main_bcihitl()
-    else:
-        main_hitl()
-    pass
-
-def main():
-    pass
-
-def main_hitl():
     setup = SetUp(params)
-
-    pass
-
-def main_bcihitl():
-    pass
+    setup.set_up()
 
 if __name__ == "__main__":
     run()
