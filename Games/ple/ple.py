@@ -254,7 +254,7 @@ class PLE(object):
 
         return self.game.lives
 
-    def reset_game(self):
+    def reset_game(self, seed=None):
         """
         Performs a reset of the games to a clean initial state.
         """
@@ -262,6 +262,7 @@ class PLE(object):
         self.action = []
         self.previous_score = 0.0
         self.game.reset()
+        self.game.rng = np.random.RandomState(seed)
 
     def getScreenRGB(self):
         """

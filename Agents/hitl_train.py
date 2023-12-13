@@ -14,11 +14,12 @@ from Data.demonstrations import Demonstration
 record_demos = True
 
 class HumanInTheLoopTrain():
-    def __init__(self, environment, env_name, algorithm, episodes, steps, gamma, alpha, seed, num_demos, name):
+    def __init__(self, environment, env_name, algorithm, algorithm_name, episodes, steps, gamma, alpha, seed, num_demos, name):
         self.env_name = env_name
         self.steps = steps
         self.env = environment
         self.policy = algorithm
+        self.algorithm_name = algorithm_name
         self.eps = episodes
         self.gamma = gamma
         self.alpha = alpha
@@ -219,7 +220,7 @@ class HumanInTheLoopTrain():
         env = self.env #modified LunarLander game
         human = True #Demonstrations are occuring, render the game
 
-        demonstrations_dict = {"demo_name": self.demo_name} #dictionary of demonstrations
+        demonstrations_dict = {"demo_name": self.demo_name, "algorithm": self.algorithm_name} #dictionary of demonstrations
         
         #Create policy
         policy = self.policy
@@ -261,8 +262,8 @@ class HumanInTheLoopTrain():
                     break
 
             final_episode_actions = action_list
-            final_episode_rewards = policy._drs
-            final_episode_states = policy._xs
+            final_episode_rewards = self.policy._drs
+            final_episode_states = self.policy._xs
             final_episode_steps = t
 
 
